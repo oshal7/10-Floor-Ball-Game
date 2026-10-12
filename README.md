@@ -1,13 +1,19 @@
 # Tilt10
 
-A minimalist physics puzzle for the phone. You steer a ball down a 10-floor vertical shaft by tilting the phone.
-You get **12 balls** for the whole run, and every ball you lose **stays in the shaft**. A dead ball can fill a
-spike pit, hold a pressure plate down, or drive a later ball's impact into cracked glass.
+A minimalist physics puzzle. You guide a ball down a 10-floor shaft with **12 balls** for the whole run, and every
+ball you lose **stays in the shaft**. Dead balls fill spike pits, hold pressure plates down and add weight to glass.
 
 Inspired by Cursor\*10, where you cooperate with your own earlier attempts. In Tilt10 the earlier attempts stay
 behind as physical bodies, not replayed ghosts.
 
-## Play
+**Play:** https://oshal7.github.io/10-Floor-Ball-Game/ (the start page links to both versions)
+
+| Version | Folder | View | Controls |
+| --- | --- | --- | --- |
+| **v2** (current) | [`v2/`](v2/) | Top-down: you look down the shaft and dive from board to board | Mouse or finger |
+| v1 | [`v1/`](v1/) (also git tag `v1.0`) | Side view of a vertical shaft | Phone tilt (gyroscope) |
+
+## Run locally
 
 No build step. It's static HTML + ES modules.
 
@@ -15,75 +21,85 @@ No build step. It's static HTML + ES modules.
 npx http-server -p 8080 .      # or: python3 -m http.server 8080
 ```
 
-Open `http://localhost:8080` on a desktop to try it with the keyboard.
+Then open `http://localhost:8080`.
 
-**On a phone**, motion sensors only work over **HTTPS** (iOS also asks for permission when you tap *Drop the first
-ball*). The easiest options:
+GitHub Pages serves the repo root (*Settings → Pages → Deploy from a branch →
+`claude/affectionate-albattani-z62ld2` / `(root)`*), and every push redeploys it.
 
-- **GitHub Pages:** live at **https://oshal7.github.io/10-Floor-Ball-Game/** once Pages is enabled
-  (*Settings → Pages → Deploy from a branch → `claude/affectionate-albattani-z62ld2` / `(root)`*). Every push redeploys it.
-- **Local tunnel:** run the server above, then `npx localtunnel --port 8080` (or ngrok / cloudflared) and open the HTTPS URL.
+---
+
+## v2: Top-down dive
+
+You look straight down the shaft. Each floor is a square board. Roll the ball into the floor's hole and the camera
+dives to the next floor, where the ball lands at the same spot. The floor below is visible through every hole.
 
 ### Controls
 
-| Action | Phone | Desktop |
-| --- | --- | --- |
-| Steer | Tilt the phone | Arrow keys / WASD |
-| Give up this ball (its body stays) | **⚓ Anchor** button | Space |
-| Set "level" to how you're holding it now | **◎** button | C |
-| No sensor fallback | Drag anywhere (virtual joystick) | Mouse drag |
+| Action | Mouse | Phone / tablet | Keyboard |
+| --- | --- | --- | --- |
+| Steer | The ball rolls toward the cursor | Hold a finger on the screen; the ball rolls toward it | Arrow keys / WASD |
+| Give up this ball (its body stays) | Right-click | **⚓ Anchor** button | Space |
 
-Gravity always keeps some pull downward. Tilting steers left and right, and pulls the ball down harder or softer.
-You can't roll uphill, so a ball in a dead end is stuck and has to be anchored. Each ball gets **30 s per floor**.
-When the time runs out, the ball goes still and its body stays where it is.
+The further the cursor is from the ball, the harder it rolls. The board leans slightly toward the cursor to show
+the pull. Each ball gets **30 s per floor**. When the time runs out, the ball stops and its body stays where it is.
 
-## How earlier balls change the shaft
+### How earlier balls change the shaft
 
-| Effect | How it happens |
+| Effect | How it works |
 | --- | --- |
-| **Bodies are obstacles** | Anchored, timed-out and impaled balls become solid bodies, numbered by attempt. |
-| **Paving** | A ball that dies on spikes stays impaled, and later balls roll over it. |
-| **Plates** | A pressure plate is pressed while any ball or body rests on it. Anchor on it to hold its door open for good. |
-| **Glass remembers** | Each hit cracks the glass, and the cracks carry over to later balls. Landing on a body that rests on glass drives the blow into the glass. |
-| **Bodies fall** | When glass, a tile or a door under a body goes away, the body drops, and it can land on something lower down, like a plate. |
-| **Crumbling tiles** | Tiles fall apart 0.3 s after anything touches them, and they don't come back. |
+| **Bodies** | Anchored or timed-out balls stay where they stopped as obstacles, numbered by attempt. |
+| **Paving** | A ball that falls into a spike pit fills it, and later balls roll straight over. |
+| **Plates** | A plate is pressed while a ball or body sits on it. Anchor on it to hold its door open for good. |
+| **Glass floors** | Every ball that lands on one cracks it, and 3 cracks break it. Two balls on it at once (live or dead) also break it. |
+| **Glass walls** | Hit them fast to crack or shatter them. Cracks carry over to later balls. |
+| **Bodies fall** | When glass or a tile under a body gives way, the body drops to the floor below and can plug a pit there. |
+| **Crumbling tiles** | Tiles fall away 0.55 s after anything touches them and don't come back. Dead balls fill the gaps. |
 | **Trails** | Each earlier ball leaves a faint trail of its path. |
 
-A ball crushed by a pendulum shatters and leaves nothing behind.
+A ball hit by a sweeper shatters and leaves nothing behind.
 
-## The floors
+### The floors
 
-| # | Name | Theme | What it teaches |
+| # | Name | Theme | Puzzle |
 | --- | --- | --- | --- |
-| 1 | First Drop | Introduction | Tilt feel: a zig-zag of ledges |
-| 2 | Funnels | Introduction | Angled walls and a deflector block |
-| 3 | The Fallen | Momentum | A spike pit: jump it with speed, or let a dead ball fill it |
-| 4 | Glass Floor | Destruction | A glass floor that only a hard fall breaks (tilt forward to slam) |
-| 5 | Pendulum Hall | Impact | Time two pendulums and break a glass wall with sideways speed |
-| 6 | Two Panes | Destruction | Break two panes in one fall, with a pendulum swinging through the shaft |
-| 7 | Pressure | Switches | Anchor a ball on a plate to open the trapdoor |
-| 8 | Sequence | Switches | Plate 1 opens a gate that leads to plate 2: two sacrifices, in order |
-| 9 | Inversion | Precision | A reverse-gravity zone lifts you through a narrow slot over a wall |
-| 10 | The Crumbling Bottom | Chaos | A crumbling bridge over spikes, guarded by a pendulum |
+| 1 | First Drop | Introduction | A zig-zag to learn cursor steering |
+| 2 | Pits | Introduction | Weave between spike pits |
+| 3 | The Fallen | Momentum | A spike pit blocks the only gap, so one ball has to die there to fill it |
+| 4 | Glass Floor | Destruction | The exit is under glass: anchor one ball on it, then roll another on top |
+| 5 | Sweepers | Impact | Time a rotating arm, then smash a glass wall at speed |
+| 6 | Shortcut | Destruction | The landing spot is glass: after three landings it breaks into a shortcut |
+| 7 | Pressure | Switches | Anchor a ball on the plate to open the door to the exit |
+| 8 | Sequence | Switches | Plate 1 opens the gate to plate 2: two sacrifices, in order |
+| 9 | Inversion | Precision | Violet zones invert your steering, and the corridors are lined with pits |
+| 10 | The Crumbling Bottom | Chaos | A crumbling bridge over a spike void, with a sweeper crossing it |
 
-## Code map
+### Code map
 
 ```
-index.html      HUD, overlays, buttons
-style.css       UI styling
-js/levels.js    All 10 floors as data (walls, glass, spikes, tiles, plates, doors, pendulums, zones)
-js/game.js      Physics, input (DeviceOrientation, keys, drag), rendering, audio/haptics
+v2/index.html      HUD, overlays, buttons
+v2/style.css       UI styling
+v2/js/levels.js    All 10 boards as data (walls, holes, pits, glass, plates, doors, sweepers, zones, crumbling grid)
+v2/js/game.js      Physics, cursor/touch/keyboard steering, depth-dive rendering, audio
 ```
 
-To change or add a floor, edit `FLOOR_DEFS` in `js/levels.js`. Each floor is 360×640 in its own coordinates, and
-the bottom 20 px is the slab the ball has to get through.
+To change a floor, edit `FLOOR_DEFS` in `v2/js/levels.js`. Each board is 400×400. The ball lands on the next floor
+at the same x/y it fell from, so each floor's `entries` must line up with the holes of the floor above.
 
 Dev URL parameters: `?floor=7` starts every ball at floor 7, and `?balls=20` changes the ball budget.
 `window.tilt10` exposes the game state in the console.
 
+---
+
+## v1: Side-view descent
+
+The original prototype. It shows the shaft from the side and steers by tilting the phone (DeviceOrientation, so it
+needs HTTPS and motion permission on iOS). It falls back to arrow keys or a drag joystick. The ten floors use
+pendulums, glass, plates, a reverse-gravity zone and crumbling tiles. The code is in `v1/`, and the git tag `v1.0`
+marks the commit before the restructure.
+
 ## Ideas for later
 
-- Real Cursor\*10-style replay ghosts that repeat earlier balls' inputs alongside the live one
+- Cursor\*10-style replay ghosts that repeat earlier balls' paths alongside the live one
+- Checkpoints, so later balls can start partway down the shaft
 - Daily seed and shared leaderboard (fewest balls)
 - Level editor, since floors are plain data
-- More persistence: balls that rust into hinges, bodies that ignite fuses, magnets

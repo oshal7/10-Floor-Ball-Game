@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#05060a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <title>Tilt10 v2</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <canvas id="game"></canvas>
+
+  <header id="hud">
+    <div class="hud-left">
+      <div id="hud-floor">FLOOR 1/10</div>
+      <div id="hud-name">First Drop</div>
+    </div>
+    <div id="hud-balls"></div>
+    <div id="hud-timer-wrap"><div id="hud-timer"></div></div>
+  </header>
+
+  <footer id="controls">
+    <a class="ver" href="../">v2 · switch</a>
+    <button id="anchor" title="Anchor this ball (Space or right-click)">⚓ ANCHOR</button>
+  </footer>
+
+  <div id="toast" role="status"></div>
+
+  <section id="title" class="overlay">
+    <div class="card">
+      <h1>TILT<span>10</span></h1>
+      <p class="tag">Ten floors down. Twelve balls. Every ball you lose stays in the shaft.</p>
+      <ul>
+        <li>You're looking <b>down the shaft</b>. Each floor is a board. Drop through its hole to dive to the next one.</li>
+        <li>The ball <b>rolls toward your cursor</b>. On a phone, hold your finger on the screen. The further away you point, the harder it rolls.</li>
+        <li>Dead balls stay where they died. They fill spike pits, hold plates down and add weight to glass.</li>
+        <li><b>⚓ Anchor</b> gives up the current ball on purpose (Space or right-click).</li>
+      </ul>
+      <button id="start">DROP THE FIRST BALL</button>
+    </div>
+  </section>
+
+  <section id="end" class="overlay hidden">
+    <div class="card">
+      <h1 id="end-title">BREACHED</h1>
+      <p id="end-text"></p>
+      <p id="end-best" class="small"></p>
+      <button id="again">TRY AGAIN</button>
+    </div>
+  </section>
+
+  <script type="module" src="js/game.js"></script>
+</body>
+</html>
