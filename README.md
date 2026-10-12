@@ -20,7 +20,8 @@ Open `http://localhost:8080` on a desktop to try it with the keyboard.
 **On a phone**, motion sensors only work over **HTTPS** (iOS also asks for permission when you tap *Drop the first
 ball*). The easiest options:
 
-- **GitHub Pages:** in *Settings → Pages*, deploy from this branch's root, then open the `https://…github.io/…` URL on your phone.
+- **GitHub Pages:** live at **https://oshal7.github.io/10-Floor-Ball-Game/** once Pages is enabled
+  (*Settings → Pages → Deploy from a branch → `claude/affectionate-albattani-z62ld2` / `(root)`*). Every push redeploys it.
 - **Local tunnel:** run the server above, then `npx localtunnel --port 8080` (or ngrok / cloudflared) and open the HTTPS URL.
 
 ### Controls
