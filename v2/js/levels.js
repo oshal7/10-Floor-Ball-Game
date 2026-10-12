@@ -122,7 +122,7 @@ export const FLOOR_DEFS = [
     entries: [[332, 355], [80, 80]],
     hints: [
       [250, 220, 'PLATES HOLD DOORS OPEN', 13],
-      [250, 240, '⚓ anchor a ball to leave it behind', 11],
+      [250, 240, 'park a ball on it until its time runs out', 11],
     ],
     walls: [R(180, 12, 16, 180), R(12, 280, 110, 12), R(110, 280, 12, 40)],
     plates: [R(300, 40, 60, 60, { id: '7a' })],

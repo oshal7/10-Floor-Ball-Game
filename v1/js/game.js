@@ -7,7 +7,7 @@ const G = 1400; // full gravity, px/s^2
 const TILT_DEG = 25; // degrees of tilt for full steering
 const STEP = 1 / 240; // physics substep
 const MAX_SPEED = 1900;
-const FLOOR_TIME = 30; // seconds per floor before a ball gives out
+const BALL_LIFE = 60; // seconds each ball lives, across all floors
 const TILE_CRUMBLE = 0.3; // seconds from first touch to collapse
 
 const params = new URLSearchParams(location.search);
@@ -235,7 +235,6 @@ function newGame() {
     time: 0,
     ballNo: 0,
     ball: null,
-    trails: [],
     particles: [],
     camY: START_FLOOR * H,
     respawnAt: 0,
@@ -256,10 +255,8 @@ function spawnBall() {
     vy: 40,
     n: state.ballNo,
     alive: true,
-    trail: [],
-    trailT: 0,
     maxFloor: START_FLOOR,
-    floorTime: FLOOR_TIME,
+    life: BALL_LIFE,
     contact: false,
     inZone: false,
   };
@@ -295,15 +292,13 @@ function releaseSupported(shape) {
 const DEATH_MSG = {
   spike: (n) => `#${n} impaled — its body stays on the spikes`,
   crushed: (n) => `#${n} shattered by a pendulum`,
-  timeout: (n) => `#${n} ran out of time and went still`,
-  anchor: (n) => `#${n} anchored — it stays forever`,
+  timeout: (n) => `#${n} ran out of time — its body stays here`,
 };
 
 function killBall(cause) {
   const b = state.ball;
   if (!b || !b.alive) return;
   b.alive = false;
-  state.trails.push(b.trail);
   state.deathAt = state.time;
   state.respawnAt = state.time + 1.0;
 
@@ -316,13 +311,9 @@ function killBall(cause) {
     if (cause === 'spike') settle(o);
     bodies.push(o);
     if (cause === 'spike') { burst(b.x, b.y, '#ff4d6d', 12, 160); sfx.crush(); vibrate(80); }
-    else { sfx.anchor(); vibrate(25); }
+    else { sfx.still(); vibrate(25); }
   }
   toast(DEATH_MSG[cause](b.n) + (state.ballNo >= TOTAL_BALLS ? '' : `  ·  ${TOTAL_BALLS - state.ballNo} left`));
-}
-
-function anchor() {
-  if (state && state.phase === 'play' && state.ball && state.ball.alive) killBall('anchor');
 }
 
 function endGame(won) {
@@ -442,13 +433,11 @@ function updateBall(dt) {
   const fi = Math.floor(b.y / H);
   if (fi > b.maxFloor && fi < FLOORS) {
     b.maxFloor = fi;
-    b.floorTime = FLOOR_TIME;
     sfx.floor(fi);
     vibrate(12);
   }
   if (b.y > FLOORS * H + 40) {
     b.alive = false;
-    state.trails.push(b.trail);
     sfx.win();
     vibrate([50, 50, 50, 50, 150]);
     endGame(true);
@@ -515,13 +504,8 @@ function update(dt) {
 
   const b = state.ball;
   if (state.phase === 'play' && b && b.alive) {
-    b.floorTime -= dt;
-    if (b.floorTime <= 0) killBall('timeout');
-    b.trailT += dt;
-    if (b.trailT > 1 / 30) {
-      b.trailT = 0;
-      b.trail.push([b.x, b.y]);
-    }
+    b.life -= dt;
+    if (b.life <= 0) killBall('timeout');
   }
 
   if (state.phase === 'play' && b && !b.alive) {
@@ -664,21 +648,6 @@ function render() {
     ctx.fillStyle = big ? 'rgba(220,228,245,0.55)' : 'rgba(200,210,230,0.38)';
     ctx.fillText(h.text, h.x, h.y);
   }
-
-  // ghost trails of earlier balls (the Cursor*10 nod)
-  ctx.lineJoin = 'round';
-  ctx.lineCap = 'round';
-  const trails = state ? state.trails : [];
-  trails.forEach((tr, i) => {
-    if (tr.length < 2) return;
-    const age = trails.length - i;
-    ctx.strokeStyle = `rgba(150,200,255,${Math.max(0.05, 0.18 - age * 0.02)})`;
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(tr[0][0], tr[0][1]);
-    for (let k = 1; k < tr.length; k++) ctx.lineTo(tr[k][0], tr[k][1]);
-    ctx.stroke();
-  });
 
   // plate → door wiring
   for (const d of world.doors) {
@@ -836,16 +805,6 @@ function render() {
   // live ball
   const b = state && state.ball;
   if (b && b.alive) {
-    if (b.trail.length > 1) {
-      ctx.strokeStyle = 'rgba(255,255,255,0.12)';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      const start = Math.max(0, b.trail.length - 40);
-      ctx.moveTo(b.trail[start][0], b.trail[start][1]);
-      for (let k = start + 1; k < b.trail.length; k++) ctx.lineTo(b.trail[k][0], b.trail[k][1]);
-      ctx.lineTo(b.x, b.y);
-      ctx.stroke();
-    }
     ctx.fillStyle = '#ffffff';
     ctx.shadowColor = b.inZone ? '#b48cff' : '#9ad8ff';
     ctx.shadowBlur = 18;
@@ -970,11 +929,13 @@ let hudCache = '';
 function updateHud() {
   const b = state.ball;
   const fi = b && b.alive ? clamp(Math.floor(b.y / H), 0, FLOORS - 1) : clamp(Math.round(state.camY / H), 0, FLOORS - 1);
-  const key = `${fi}|${state.ballNo}|${b && b.alive}`;
+  const live = !!(b && b.alive);
+  const secs = live ? Math.max(0, Math.ceil(b.life)) : 0;
+  const key = `${fi}|${state.ballNo}|${live}|${secs}`;
   if (key !== hudCache) {
     hudCache = key;
     hud.floor.textContent = `FLOOR ${fi + 1}/${FLOORS}`;
-    hud.name.textContent = FLOOR_DEFS[fi].name;
+    hud.name.textContent = live ? `${FLOOR_DEFS[fi].name} · ${secs}s left` : FLOOR_DEFS[fi].name;
     let html = '';
     for (let i = 1; i <= TOTAL_BALLS; i++) {
       const cls = i < state.ballNo || (i === state.ballNo && !(b && b.alive)) ? 'used' : i === state.ballNo ? 'live' : '';
@@ -982,7 +943,7 @@ function updateHud() {
     }
     hud.balls.innerHTML = html;
   }
-  const frac = b && b.alive ? clamp(b.floorTime / FLOOR_TIME, 0, 1) : 0;
+  const frac = live ? clamp(b.life / BALL_LIFE, 0, 1) : 0;
   hud.timer.style.transform = `scaleX(${frac})`;
   hud.timer.classList.toggle('low', frac < 0.25);
 }
@@ -1059,7 +1020,7 @@ const sfx = {
   shatter: () => { noise(0.45, 0.14, 1800); tone(1800, 0.25, 'triangle', 0.03, 900); },
   crumble: () => noise(0.15, 0.05, 400),
   crush: () => { tone(200, 0.25, 'sawtooth', 0.05, 50); noise(0.2, 0.06, 600); },
-  anchor: () => tone(300, 0.3, 'sine', 0.06, 120),
+  still: () => tone(300, 0.3, 'sine', 0.06, 120),
   click: (on) => tone(on ? 900 : 500, 0.05, 'square', 0.025),
   floor: (fi) => tone(330 + fi * 40, 0.1, 'sine', 0.035),
   win: () => [523, 659, 784, 1046].forEach((f, i) => setTimeout(() => tone(f, 0.3, 'triangle', 0.06), i * 120)),
@@ -1100,7 +1061,6 @@ async function start() {
 
 $('start').addEventListener('click', start);
 $('again').addEventListener('click', start);
-$('anchor').addEventListener('click', anchor);
 $('calib').addEventListener('click', () => {
   calibrate();
   toast(input.motion ? 'Tilt recalibrated' : 'No tilt sensor — drag or use arrow keys');
@@ -1108,7 +1068,6 @@ $('calib').addEventListener('click', () => {
 
 window.addEventListener('keydown', (e) => {
   const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
-  if (k === ' ') { anchor(); e.preventDefault(); return; }
   if (k === 'c') calibrate();
   if (k.startsWith('Arrow')) e.preventDefault();
   input.keys.add(k);
@@ -1152,6 +1111,5 @@ window.tilt10 = {
   get world() { return world; },
   get bodies() { return bodies; },
   input,
-  anchor,
   start,
 };

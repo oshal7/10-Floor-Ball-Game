@@ -141,8 +141,8 @@ export const FLOOR_DEFS = [
     hints: [
       [210, 70, 'PLATES HOLD DOORS', 16],
       [210, 94, 'only while something rests on them'],
-      [180, 330, '⚓ ANCHOR gives a ball up for good', 13],
-      [180, 352, 'its body stays where it settles', 13],
+      [180, 330, 'park a ball on the plate', 13],
+      [180, 352, 'when its time runs out, it stays there', 13],
     ],
     walls: [R(0, 200, 300, 14), ...slab([[150, 210]])],
     plates: [R(20, 614, 60, 6, { id: '7a' })],

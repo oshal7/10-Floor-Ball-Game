@@ -38,23 +38,26 @@ dives to the next floor, where the ball lands at the same spot. The floor below 
 | Action | Mouse | Phone / tablet | Keyboard |
 | --- | --- | --- | --- |
 | Steer | The ball rolls toward the cursor | Hold a finger on the screen; the ball rolls toward it | Arrow keys / WASD |
-| Give up this ball (its body stays) | Right-click | **⚓ Anchor** button | Space |
+| Stop this ball now (its body stays) | Click | Tap with a second finger | Space |
 
 The further the cursor is from the ball, the harder it rolls. The board leans slightly toward the cursor to show
-the pull. Each ball gets **30 s per floor**. When the time runs out, the ball stops and its body stays where it is.
+the pull.
+
+Each ball has **one 60-second timer for the whole descent**. It doesn't reset between floors, so later balls need to
+move quickly through floors that are already solved. When the time runs out, the ball stops and its body stays
+where it is. That's how you leave a ball on a plate. Clicking stops it sooner.
 
 ### How earlier balls change the shaft
 
 | Effect | How it works |
 | --- | --- |
-| **Bodies** | Anchored or timed-out balls stay where they stopped as obstacles, numbered by attempt. |
+| **Bodies** | Balls that stop (time ran out, or you clicked) stay where they are as obstacles, numbered by attempt. |
 | **Paving** | A ball that falls into a spike pit fills it, and later balls roll straight over. |
-| **Plates** | A plate is pressed while a ball or body sits on it. Anchor on it to hold its door open for good. |
+| **Plates** | A plate is pressed while a ball or body sits on it. Leave a ball on it to hold its door open for good. |
 | **Glass floors** | Every ball that lands on one cracks it, and 3 cracks break it. Two balls on it at once (live or dead) also break it. |
 | **Glass walls** | Hit them fast to crack or shatter them. Cracks carry over to later balls. |
 | **Bodies fall** | When glass or a tile under a body gives way, the body drops to the floor below and can plug a pit there. |
 | **Crumbling tiles** | Tiles fall away 0.55 s after anything touches them and don't come back. Dead balls fill the gaps. |
-| **Trails** | Each earlier ball leaves a faint trail of its path. |
 
 A ball hit by a sweeper shatters and leaves nothing behind.
 
@@ -65,10 +68,10 @@ A ball hit by a sweeper shatters and leaves nothing behind.
 | 1 | First Drop | Introduction | A zig-zag to learn cursor steering |
 | 2 | Pits | Introduction | Weave between spike pits |
 | 3 | The Fallen | Momentum | A spike pit blocks the only gap, so one ball has to die there to fill it |
-| 4 | Glass Floor | Destruction | The exit is under glass: anchor one ball on it, then roll another on top |
+| 4 | Glass Floor | Destruction | The exit is under glass: leave one ball on it, then roll another on top |
 | 5 | Sweepers | Impact | Time a rotating arm, then smash a glass wall at speed |
 | 6 | Shortcut | Destruction | The landing spot is glass: after three landings it breaks into a shortcut |
-| 7 | Pressure | Switches | Anchor a ball on the plate to open the door to the exit |
+| 7 | Pressure | Switches | Leave a ball on the plate to open the door to the exit |
 | 8 | Sequence | Switches | Plate 1 opens the gate to plate 2: two sacrifices, in order |
 | 9 | Inversion | Precision | Violet zones invert your steering, and the corridors are lined with pits |
 | 10 | The Crumbling Bottom | Chaos | A crumbling bridge over a spike void, with a sweeper crossing it |
@@ -93,7 +96,8 @@ Dev URL parameters: `?floor=7` starts every ball at floor 7, and `?balls=20` cha
 ## v1: Side-view descent
 
 The original prototype. It shows the shaft from the side and steers by tilting the phone (DeviceOrientation, so it
-needs HTTPS and motion permission on iOS). It falls back to arrow keys or a drag joystick. The ten floors use
+needs HTTPS and motion permission on iOS). It falls back to arrow keys or a drag joystick. It uses the same rules for
+time: one 60-second timer per ball for the whole descent, with no Anchor button. The ten floors use
 pendulums, glass, plates, a reverse-gravity zone and crumbling tiles. The code is in `v1/`, and the git tag `v1.0`
 marks the commit before the restructure.
 

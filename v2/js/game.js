@@ -8,7 +8,7 @@ const ROLL_DAMP = 1.1; // per second
 const MAX_SPEED = 750;
 const STEER_RANGE = 130; // cursor distance (board px) for full tilt
 const STEP = 1 / 240;
-const FLOOR_TIME = 30;
+const BALL_LIFE = 60; // seconds each ball lives, across all floors
 const FALL_TIME = 0.55;
 const TILE_CRUMBLE = 0.55;
 const GLASS_CRACKS = 3;
@@ -48,7 +48,6 @@ function buildFloors() {
       sweepers: (def.sweepers || []).map((s) => ({ ...s, a: s.phase })),
       zones: def.zones || [],
       cells: [],
-      trails: [],
     };
     if (def.grid) {
       const g = def.grid;
@@ -215,9 +214,8 @@ function spawnBall() {
   state.ball = {
     f: START_FLOOR, x, y, vx: 0, vy: 0,
     n: state.ballNo, alive: true, falling: null, spawnT: 0,
-    floorTime: FLOOR_TIME, maxFloor: START_FLOOR, trail: [], trailT: 0, inZone: false,
+    life: BALL_LIFE, inZone: false,
   };
-  floors[START_FLOOR].trails.push(state.ball.trail);
   sfx.spawn();
 }
 
@@ -270,8 +268,8 @@ function separate(o, fl) {
 const DEATH_MSG = {
   pit: (n) => `#${n} fell on the spikes — its body fills the pit`,
   crushed: (n) => `#${n} shattered by a sweeper`,
-  timeout: (n) => `#${n} ran out of time and stopped`,
-  anchor: (n) => `#${n} anchored — it stays here for good`,
+  timeout: (n) => `#${n} ran out of time — its body stays here`,
+  stop: (n) => `#${n} stopped — its body stays here`,
 };
 
 function killBall(cause, pit) {
@@ -294,7 +292,7 @@ function killBall(cause, pit) {
     const o = { f: b.f, x: b.x, y: b.y, n: b.n, kind: 'body' };
     separate(o, fl);
     bodies.push(o);
-    sfx.anchor();
+    sfx.stop();
     vibrate(25);
     checkGlassWeight(fl);
   }
@@ -302,9 +300,11 @@ function killBall(cause, pit) {
   toast(DEATH_MSG[cause](b.n) + (left > 0 ? `  ·  ${left} left` : ''));
 }
 
-function anchor() {
+// End the current ball early (click / Space / two fingers). Same as its
+// time running out: the body stays where it is.
+function stopBall() {
   const b = state && state.ball;
-  if (state.phase === 'play' && b && b.alive && !b.falling) killBall('anchor');
+  if (state && state.phase === 'play' && b && b.alive && !b.falling) killBall('stop');
 }
 
 function endGame(won) {
@@ -389,12 +389,6 @@ function land() {
     return;
   }
   const fl = floors[b.f];
-  b.trail = [];
-  fl.trails.push(b.trail);
-  if (b.f > b.maxFloor) {
-    b.maxFloor = b.f;
-    b.floorTime = FLOOR_TIME;
-  }
   sfx.land(b.f);
   vibrate(12);
   // Landing on glass cracks it.
@@ -549,13 +543,8 @@ function update(dt) {
 
   if (state.phase === 'play' && b && b.alive && !b.falling) {
     b.spawnT = Math.min(1, b.spawnT + dt * 3);
-    b.floorTime -= dt;
-    if (b.floorTime <= 0) killBall('timeout');
-    b.trailT += dt;
-    if (b.trailT > 1 / 30) {
-      b.trailT = 0;
-      b.trail.push([b.x, b.y]);
-    }
+    b.life -= dt;
+    if (b.life <= 0) killBall('timeout');
   }
 
   // camera depth
@@ -790,20 +779,6 @@ function drawFloor(fl) {
     ctx.fillStyle = size >= 13 ? 'rgba(225,232,248,0.55)' : 'rgba(205,214,232,0.42)';
     ctx.fillText(text, x, y);
   }
-
-  // ghost trails of earlier balls
-  ctx.lineJoin = 'round';
-  ctx.lineCap = 'round';
-  ctx.lineWidth = 2;
-  fl.trails.forEach((tr, i) => {
-    if (tr.length < 2 || (state && state.ball && tr === state.ball.trail)) return;
-    const age = fl.trails.length - i;
-    ctx.strokeStyle = `rgba(150,200,255,${Math.max(0.05, 0.2 - age * 0.02)})`;
-    ctx.beginPath();
-    ctx.moveTo(tr[0][0], tr[0][1]);
-    for (let k = 1; k < tr.length; k++) ctx.lineTo(tr[k][0], tr[k][1]);
-    ctx.stroke();
-  });
 
   // crumbling grid
   for (const c of fl.cells) {
@@ -1105,11 +1080,12 @@ function updateHud() {
   const b = state.ball;
   const fi = clamp(Math.round(state.depth), 0, FLOORS - 1);
   const live = !!(b && b.alive);
-  const key = `${fi}|${state.ballNo}|${live}`;
+  const secs = live ? Math.max(0, Math.ceil(b.life)) : 0;
+  const key = `${fi}|${state.ballNo}|${live}|${secs}`;
   if (key !== hudCache) {
     hudCache = key;
     hud.floor.textContent = `FLOOR ${fi + 1}/${FLOORS}`;
-    hud.name.textContent = FLOOR_DEFS[fi].name;
+    hud.name.textContent = live ? `${FLOOR_DEFS[fi].name} · ${secs}s left` : FLOOR_DEFS[fi].name;
     let html = '';
     for (let i = 1; i <= TOTAL_BALLS; i++) {
       const cls = i < state.ballNo || (i === state.ballNo && !live) ? 'used' : i === state.ballNo ? 'live' : '';
@@ -1117,7 +1093,7 @@ function updateHud() {
     }
     hud.balls.innerHTML = html;
   }
-  const frac = live ? clamp(b.floorTime / FLOOR_TIME, 0, 1) : 0;
+  const frac = live ? clamp(b.life / BALL_LIFE, 0, 1) : 0;
   hud.timer.style.transform = `scaleX(${frac})`;
   hud.timer.classList.toggle('low', frac < 0.25);
 }
@@ -1194,7 +1170,7 @@ const sfx = {
   shatter: () => { noise(0.45, 0.14, 1800); tone(1800, 0.25, 'triangle', 0.03, 900); },
   crumble: () => noise(0.15, 0.05, 400),
   crush: () => { tone(200, 0.25, 'sawtooth', 0.05, 50); noise(0.2, 0.06, 600); },
-  anchor: () => tone(300, 0.3, 'sine', 0.06, 120),
+  stop: () => tone(300, 0.3, 'sine', 0.06, 120),
   click: (on) => tone(on ? 900 : 500, 0.05, 'square', 0.025),
   win: () => [523, 659, 784, 1046].forEach((f, i) => setTimeout(() => tone(f, 0.3, 'triangle', 0.06), i * 120)),
 };
@@ -1213,11 +1189,10 @@ function start() {
 
 $('start').addEventListener('click', start);
 $('again').addEventListener('click', start);
-$('anchor').addEventListener('click', anchor);
 
 window.addEventListener('keydown', (e) => {
   const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
-  if (k === ' ') { if (state) anchor(); e.preventDefault(); return; }
+  if (k === ' ') { stopBall(); e.preventDefault(); return; }
   if (k.startsWith('Arrow')) e.preventDefault();
   input.keys.add(k);
 });
@@ -1230,15 +1205,28 @@ window.addEventListener('pointermove', (e) => {
   if (e.target !== canvas) { input.pointer = null; return; }
   if (e.pointerType === 'mouse' || e.buttons) input.pointer = { x: e.clientX, y: e.clientY };
 });
+// A mouse click ends the current ball (the cursor never has to leave it);
+// on touch screens a second finger does the same.
+const touches = new Set();
 canvas.addEventListener('pointerdown', (e) => {
+  if (e.pointerType === 'mouse') {
+    if (e.button === 0) stopBall();
+    return;
+  }
+  touches.add(e.pointerId);
+  if (touches.size >= 2) { stopBall(); return; }
   input.pointer = { x: e.clientX, y: e.clientY };
-  if (e.pointerType !== 'mouse') canvas.setPointerCapture(e.pointerId);
+  canvas.setPointerCapture(e.pointerId);
 });
-const release = (e) => { if (e.pointerType !== 'mouse') input.pointer = null; };
+const release = (e) => {
+  if (e.pointerType === 'mouse') return;
+  touches.delete(e.pointerId);
+  if (touches.size === 0) input.pointer = null;
+};
 canvas.addEventListener('pointerup', release);
 canvas.addEventListener('pointercancel', release);
 document.addEventListener('mouseleave', () => { input.pointer = null; });
-canvas.addEventListener('contextmenu', (e) => { e.preventDefault(); if (state) anchor(); });
+canvas.addEventListener('contextmenu', (e) => { e.preventDefault(); stopBall(); });
 document.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
 
 let last = performance.now();
@@ -1259,6 +1247,6 @@ window.tilt10 = {
   get floors() { return floors; },
   get bodies() { return bodies; },
   input,
-  anchor,
+  stopBall,
   start,
 };
